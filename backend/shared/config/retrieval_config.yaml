@@ -1,0 +1,26 @@
+# embedding_model and reranker_model moved to llm_config.yaml's embedding: section
+# (single place for anything model/provider-related).
+
+top_k_dense: 20
+top_k_bm25: 20
+top_k_fused: 30
+top_k_final: 5
+
+rrf_k: 60 # standard RRF smoothing constant
+
+chunk:
+  child_min_tokens: 200
+  child_max_tokens: 400
+  overlap_ratio: 0.18
+
+confidence:
+  weight_similarity: 0.35
+  weight_rerank: 0.35
+  weight_hallucination_pass_rate: 0.30
+  low_confidence_threshold: 0.5
+  caveat_penalty_multiplier: 0.7
+  # Below this pre-generation retrieval_confidence, evidence is too weak to bother generating
+  # from at all - the model tends to force a stretched, rambling "answer" out of irrelevant
+  # chunks rather than admitting it doesn't know. Calibrated from observed scores: genuinely
+  # relevant queries score ~0.2-0.4+, off-topic/vague queries score ~0.0-0.05.
+  retrieval_insufficient_threshold: 0.1

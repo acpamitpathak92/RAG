@@ -1,0 +1,5 @@
+{"question": "why are billing service pods getting killed after a deploy?", "expected_doc_ids": ["database-connection-pool-exhaustion"], "expected_answer_gist": "Postgres connection pool exhaustion during rollout due to maxSurge"}
+{"question": "clients getting ETIMEDOUT calling the orders endpoint during peak hours", "expected_doc_ids": ["connection-timeout-errors"], "expected_answer_gist": "API gateway connection pool undersized after scaling down replicas"}
+{"question": "customers see old prices after a price change in the admin panel", "expected_doc_ids": ["stale-cache-invalidation"], "expected_answer_gist": "Redis price cache not invalidated on write, relies on 15 minute TTL"}
+{"question": "how should I size the postgres connection pool during a rolling deploy", "expected_doc_ids": ["database-connection-pool-exhaustion"], "expected_answer_gist": "Lower maxSurge and per-pod pool size, consider PgBouncer"}
+{"question": "how do I configure SSL certificate rotation for the load balancer", "expected_doc_ids": [], "expected_answer_gist": "Not covered by the corpus - should trigger low confidence caveat"}

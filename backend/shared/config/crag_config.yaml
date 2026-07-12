@@ -1,0 +1,9 @@
+max_retries: 2
+multi_query_variants: 3
+
+# aggregate grade thresholds: share of top-k chunks graded "correct" needed to call the batch "correct"
+min_correct_share: 0.34
+
+hallucination:
+  pass_rate_regenerate_threshold: 0.3 # below this, retry generation once with feedback
+  max_generation_retries: 1

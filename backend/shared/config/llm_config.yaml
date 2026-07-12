@@ -1,0 +1,48 @@
+# Single source of truth for every LLM + embedding provider setting. Change anything
+# here - no code changes needed for either.
+#
+# aiaas.enabled is the master switch:
+#   false (default) -> every LLM call uses Groq (per-role models below) and every
+#                       embedding call uses the local MiniLM model (embedding.local_model).
+#   true             -> EVERY LLM call and EVERY embedding call goes through the internal
+#                       AIaaS gateway instead. No per-role mixing, no local fallback for
+#                       either. The cross-encoder reranker always stays local either way
+#                       (it's a scoring model, not an LLM or embedding call).
+
+default_provider: groq
+
+aiaas:
+  enabled: false
+  broker_url: ""
+  gateway_base_url: ""
+  chat_model: "Qwen/Qwen3.0-27B"
+  embedding_model: ""  # TODO: set to the embedding model/deployment name the AIaaS gateway exposes
+
+# Per-role model + temperature, used when aiaas.enabled is false (provider is always
+# default_provider - currently only "groq" and "aiaas" exist as providers at all).
+roles:
+  query_cleanup:
+    model: llama-3.1-8b-instant
+    temperature: 0.0
+  router:
+    model: llama-3.1-8b-instant
+    temperature: 0.0
+  query_rewrite:
+    model: llama-3.1-8b-instant
+    temperature: 0.3
+  grader:
+    model: llama-3.1-8b-instant
+    temperature: 0.0
+  query_refinement:
+    model: llama-3.1-8b-instant
+    temperature: 0.3
+  generation:
+    model: llama-3.3-70b-versatile
+    temperature: 0.2
+  judge:
+    model: llama-3.1-8b-instant
+    temperature: 0.0
+
+embedding:
+  local_model: sentence-transformers/all-MiniLM-L6-v2  # used when aiaas.enabled is false
+  reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2  # always local, regardless of aiaas.enabled
