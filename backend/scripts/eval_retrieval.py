@@ -10,7 +10,7 @@ from backend.shared.config.settings import get_settings
 from backend.query.graph.build import run_query
 from backend.ingestion.connectors.markdown_connector import MarkdownConnector
 from backend.query.retrieval.hybrid_search import hybrid_search
-from backend.shared.storage.vector_store import connect
+from backend.shared.storage.vector_store import init_default_db
 
 EVAL_SET_PATH = "data/eval/qa_eval_set.jsonl"
 CORPUS_DIR = "data/sample_corpus"
@@ -33,7 +33,7 @@ def load_eval_set(path: str) -> list[dict]:
 def main():
     stem_to_doc_id = _stem_to_doc_id(CORPUS_DIR)
     eval_set = load_eval_set(EVAL_SET_PATH)
-    conn = connect(get_settings().rag_db_path)
+    conn = init_default_db(get_settings().rag_db_path)
 
     hits_at_k = 0
     reciprocal_ranks = []

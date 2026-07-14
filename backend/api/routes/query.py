@@ -4,7 +4,7 @@ from backend.api.schemas import QueryRequest, QueryResponse
 from backend.shared.config.settings import get_settings
 from backend.query.graph.build import run_query
 from backend.shared.logging_utils import log_stage, get_logger
-from backend.shared.storage.vector_store import connect
+from backend.shared.storage.vector_store import init_default_db
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 @router.post("/query", response_model=QueryResponse)
 def query(request: QueryRequest):
     logger.info(f"POST /query received: {request.query!r}")
-    conn = connect(get_settings().rag_db_path)
+    conn = init_default_db(get_settings().rag_db_path)
     try:
         with log_stage(logger, "full query pipeline", query=request.query):
             result = run_query(conn, request.query)

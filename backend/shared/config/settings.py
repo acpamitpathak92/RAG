@@ -18,7 +18,6 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    groq_api_key: str = ""
     rag_db_path: str = DEFAULT_DB_PATH
     verbose_logging: bool = False
 

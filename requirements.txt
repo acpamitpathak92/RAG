@@ -5,11 +5,9 @@ pydantic-settings>=2.3       # loads .env into Settings (backend/shared/config/s
 fastapi>=0.111                # web framework - backend/api/main.py + routes
 uvicorn[standard]>=0.30      # ASGI server that runs the FastAPI app
 python-multipart>=0.0.9       # required by FastAPI for multipart/form file uploads (PDF upload endpoint)
-groq>=0.9.0                   # Groq API client - default LLM provider (llm/groq_provider.py)
-openai>=1.40.0                # OpenAI-compatible client - used by the aiaas provider (internal UBS gateway)
-httpx>=0.27.0                  # HTTP client passed into the OpenAI client for the aiaas provider (verify=False)
-aiaas-auth                     # internal UBS package - Azure AD broker auth for the aiaas provider (see README: Nexus index setup)
-sentence-transformers>=3.0.0 # MiniLM embedding model + cross-encoder reranker
+openai>=1.40.0                # OpenAI-compatible client - used by the AIaaS provider (internal UBS gateway)
+httpx>=0.27.0                  # HTTP client passed into the OpenAI client for the AIaaS provider (verify=False)
+aiaas-auth                     # internal UBS package - Azure AD broker auth for the AIaaS provider (see README: Nexus index setup)
 rank-bm25>=0.2.2              # BM25Okapi keyword search - retrieval/bm25_index.py
 sqlite-vec>=0.1.3            # SQLite extension for vector search (vec0) - backend/shared/storage/vector_store.py
 numpy>=1.26                   # embedding math - normalize.py, similarity.py

@@ -2,8 +2,9 @@
 
 A local, multi-agent Retrieval-Augmented Generation system for troubleshooting/issue
 knowledge bases (Markdown, PDF now; GitLab/SharePoint interfaces stubbed for later).
-Built with LangGraph, SQLite + sqlite-vec (no external services), and a pluggable
-LLM layer (Groq by default; an internal AIaaS gateway provider available, off by default).
+Built with LangGraph, SQLite + sqlite-vec (no external services), and the internal
+UBS **AIaaS** gateway for every LLM call and every embedding call - the only supported
+provider (no Groq, no local Hugging Face models).
 
 See `C:\Users\Amit Chandra Pathak\.claude\plans\i-want-to-create-parallel-twilight.md`
 for the full architecture plan (multi-agent design, CRAG, Grounding subsystems, phased
@@ -45,27 +46,28 @@ from the project root.
 python -m venv venv
 source venv/Scripts/activate   # Windows cmd/PowerShell: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env           # fill in GROQ_API_KEY (and others if configured)
+cp .env.example .env
 ```
 
-Only two LLM providers are supported: **Groq** (default) and the internal **AIaaS**
-gateway. Everything about which one is active — including the master on/off switch —
-lives in one file, `backend/shared/config/llm_config.yaml`, nothing in `.env`:
+**AIaaS is the only supported LLM/embedding/reranking provider** — every LLM call
+(query cleanup, grading, generation, reranking, etc.) and every embedding call goes
+through the internal UBS gateway. There's no Groq fallback and no local
+Hugging Face model to download. All of it is configured in one file,
+`backend/shared/config/llm_config.yaml`, nothing in `.env`:
 
 ```yaml
 aiaas:
-  enabled: false          # true -> EVERY LLM call AND EVERY embedding call uses AIaaS, nothing else
-  broker_url: ""
-  gateway_base_url: ""
+  auth_mode: devpod
+  tenant_id: "..."
+  broker_url: "..."
+  scopes: ["api://..."]
+  gateway_base_url: "..."
   chat_model: "Qwen/Qwen3.0-27B"
-  embedding_model: ""     # the embedding model/deployment name your AIaaS gateway exposes
+  embedding_model: "Qwen/Qwen3-Embedding-8B"
 ```
 
-This is a single global switch, not a per-role setting: flipping `enabled: true` routes
-*every* LLM role (router, grader, generation, etc.) *and* every embedding call (ingestion
-and query) through AIaaS — Groq and the local MiniLM embedder are not used at all while
-it's on. The cross-encoder reranker always stays local either way (`embedding.reranker_model`),
-since it's a scoring model, not an LLM or embedding call.
+Since there's nothing to run locally, ingestion and every question **require live
+AIaaS connectivity** — there is no offline/local mode.
 
 The `aiaas-auth` package AIaaS depends on lives on UBS's internal Nexus registry, not
 public PyPI — one-time setup:
@@ -150,10 +152,11 @@ pytest backend/tests/
 ## Status
 
 **Phase 1 (done)**: ingestion (MD/PDF, semantic + parent-child chunking, dedup, versioning),
-embeddings (MiniLM + cache), hybrid retrieval (sqlite-vec dense + BM25, RRF-fused),
-cross-encoder reranking, Grounded Generation Agent with citations, deterministic
-confidence scoring (with a pre-generation insufficient-evidence gate to avoid rambling
-answers on weak retrieval), FastAPI + document management endpoints + test UI, logging.
+AIaaS embeddings (+ local cache), hybrid retrieval (sqlite-vec dense + BM25, RRF-fused),
+LLM-based reranking (batched relevance scoring via AIaaS), Grounded Generation Agent with
+citations, deterministic confidence scoring (with a pre-generation insufficient-evidence
+gate to avoid rambling answers on weak retrieval), FastAPI + document management
+endpoints + test UI, logging.
 
 **Phase 2 (not yet implemented)**: CRAG grading/retry loop - a grader agent, query
 refinement agent, bounded retry loop, and fallback ladder, wired into

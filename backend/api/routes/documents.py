@@ -14,7 +14,12 @@ from backend.ingestion.connectors.markdown_connector import MarkdownConnector, d
 from backend.ingestion.connectors.pdf_connector import PDFConnector
 from backend.ingestion.pipeline import ingest_single_document
 from backend.shared.constants import KNOWLEDGE_SOURCE_DIR_NAME, README_FILENAME
-from backend.shared.storage.vector_store import connect, delete_document, get_document, list_documents_summary
+from backend.shared.storage.vector_store import (
+    delete_document,
+    get_document,
+    init_default_db,
+    list_documents_summary,
+)
 
 router = APIRouter()
 
@@ -30,7 +35,7 @@ def _safe_filename(filename: str) -> str:
 
 @router.get("/documents", response_model=list[DocumentOut])
 def list_documents():
-    conn = connect(get_settings().rag_db_path)
+    conn = init_default_db(get_settings().rag_db_path)
     try:
         return list_documents_summary(conn)
     finally:
@@ -62,7 +67,7 @@ async def upload_document(file: UploadFile):
 def reingest_document(doc_id: str):
     """Re-runs ingestion against whatever is currently on disk for this document - useful
     for PDFs (which can't be edited in-browser) or any file edited outside the app."""
-    conn = connect(get_settings().rag_db_path)
+    conn = init_default_db(get_settings().rag_db_path)
     try:
         existing = get_document(conn, doc_id)
     finally:
@@ -84,7 +89,7 @@ def reingest_document(doc_id: str):
 
 @router.get("/documents/{doc_id}", response_model=DocumentContentResponse)
 def get_document_content(doc_id: str):
-    conn = connect(get_settings().rag_db_path)
+    conn = init_default_db(get_settings().rag_db_path)
     try:
         existing = get_document(conn, doc_id)
     finally:
@@ -103,7 +108,7 @@ def get_document_content(doc_id: str):
 
 @router.put("/documents/{doc_id}", response_model=DocumentStatusResponse)
 def update_document(doc_id: str, request: UpdateDocumentRequest):
-    conn = connect(get_settings().rag_db_path)
+    conn = init_default_db(get_settings().rag_db_path)
     try:
         existing = get_document(conn, doc_id)
     finally:
@@ -123,7 +128,7 @@ def update_document(doc_id: str, request: UpdateDocumentRequest):
 
 @router.delete("/documents/{doc_id}", response_model=DocumentStatusResponse)
 def remove_document(doc_id: str):
-    conn = connect(get_settings().rag_db_path)
+    conn = init_default_db(get_settings().rag_db_path)
     try:
         existing = get_document(conn, doc_id)
         if existing is None:
