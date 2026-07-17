@@ -10,17 +10,29 @@ logger = get_logger(__name__)
 
 
 def get_aiaas_config() -> dict:
-    from backend.shared.config.settings import get_llm_config
+    """AIaaS connection settings - all environment-specific, so all sourced from .env
+    (via Settings) rather than the committed llm_config.yaml. See .env.example."""
+    from backend.shared.config.settings import get_settings
 
-    return get_llm_config()["aiaas"]
+    settings = get_settings()
+    return {
+        "auth_mode": settings.aiaas_auth_mode,
+        "tenant_id": settings.aiaas_tenant_id,
+        "broker_url": settings.aiaas_broker_url,
+        "managed_identity_client_id": settings.aiaas_managed_identity_client_id,
+        "scopes": settings.aiaas_scopes_list,
+        "gateway_base_url": settings.aiaas_gateway_base_url,
+        "chat_model": settings.aiaas_chat_model,
+        "embedding_model": settings.aiaas_embedding_model,
+    }
 
 
 def _authenticate(config: dict):
     """Returns a token object (with an .access_token attribute) for whichever auth_mode
     is configured. Some gateway routes (embeddings, observed in practice) require a token
     carrying a specific OAuth scope even though the same unscoped token works fine for
-    chat completions - so scopes are requested whenever llm_config.yaml's aiaas.scopes
-    is non-empty, regardless of which auth mode is used.
+    chat completions - so scopes are requested whenever AIAAS_SCOPES (.env) is non-empty,
+    regardless of which auth mode is used.
     """
     # Lazy import: aiaas_auth is an internal package (installed from the UBS Nexus index,
     # not public PyPI) - only required if AIaaS is actually enabled.
@@ -41,11 +53,11 @@ def _authenticate(config: dict):
         return auth.authenticate_managed_identity(scopes=scopes) if scopes else auth.authenticate_managed_identity()
 
     if auth_mode != "devpod":
-        raise ValueError(f"Unknown aiaas.auth_mode: {auth_mode!r} (supported: 'devpod', 'managed_identity')")
+        raise ValueError(f"Unknown AIAAS_AUTH_MODE: {auth_mode!r} (supported: 'devpod', 'managed_identity')")
 
     broker_url = config.get("broker_url", "")
     if not broker_url:
-        raise ValueError("aiaas.broker_url must be set in llm_config.yaml when auth_mode is 'devpod'.")
+        raise ValueError("AIAAS_BROKER_URL must be set in .env when AIAAS_AUTH_MODE is 'devpod'.")
 
     auth = AzureAuthClient(
         broker_url=broker_url,
@@ -78,7 +90,7 @@ def get_aiaas_client() -> OpenAI:
     config = get_aiaas_config()
     gateway_base_url = config.get("gateway_base_url", "")
     if not gateway_base_url:
-        raise ValueError("aiaas.gateway_base_url must be set in llm_config.yaml to use the AIaaS provider.")
+        raise ValueError("AIAAS_GATEWAY_BASE_URL must be set in .env to use the AIaaS provider.")
 
     token = _authenticate(config).access_token
     logger.info(f"AIaaS client authenticated (auth_mode={config.get('auth_mode', 'devpod')})")

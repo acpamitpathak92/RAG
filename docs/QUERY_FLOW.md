@@ -85,11 +85,13 @@ gets written.
 Steps 2-4 are fast, but "fast" search can be a little rough — it might rank a
 so-so match slightly ahead of a genuinely better one. So the system takes the
 merged shortlist (maybe 20-30 candidates) and runs a *second*, much more careful
-pass: a more powerful model reads your actual question **side-by-side** with each
-candidate chunk (not just comparing number-lists anymore) and re-scores how well
-each one truly answers what you asked. Only the very best few survive this pass.
+pass: the AIaaS chat model reads your actual question **side-by-side** with each
+candidate chunk in one batched prompt (not just comparing number-lists anymore) and
+re-scores how well each one truly answers what you asked. Only the very best few
+survive this pass.
 
-> **This stage is called:** _Cross-Encoder Reranking_.
+> **This stage is called:** _LLM-Based Reranking_ (an AIaaS chat-completion call, not
+> a separately-hosted model).
 
 At the end of this stage, the system also quietly computes a rough number
 representing "how strong does this evidence look overall?" — this becomes one
@@ -178,7 +180,7 @@ Type a question
    -> search by meaning AND by keyword, at the same time      (Hybrid Retrieval)
    -> merge both result lists fairly                          (Reciprocal Rank Fusion)
    -> pull back full context around each match                (Parent Document Retrieval)
-   -> carefully re-rank the shortlist                         (Cross-Encoder Reranking)
+   -> carefully re-rank the shortlist                         (LLM-Based Reranking)
    -> write an answer using ONLY that evidence, with citations (Grounded Generation)
    -> verify every citation points to a real chunk             (Citation Mapping)
    -> score how confident to be overall                        (Confidence Scoring)

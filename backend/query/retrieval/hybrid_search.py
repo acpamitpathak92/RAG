@@ -19,7 +19,8 @@ def hybrid_search(conn: sqlite3.Connection, query: str, filters: dict | None = N
     where_sql, where_params = build_where_clause(filters)
 
     embedder = get_embedder()
-    query_vector = embedder.embed_query(query)
+    query_instruction = config.get("query_embedding_instruction", "")
+    query_vector = embedder.embed_query(query, instruction=query_instruction)
     dense_hits = dense_search(conn, query_vector, top_k=config["top_k_dense"], where_sql=where_sql, where_params=where_params)
     dense_by_id = {hit["id"]: hit for hit in dense_hits}
     dense_ranked_ids = [hit["id"] for hit in dense_hits]

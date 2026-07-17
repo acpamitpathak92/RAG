@@ -60,5 +60,12 @@ class BaseEmbedder(ABC):
 
         return np.vstack(vectors).astype(np.float32)
 
-    def embed_query(self, text: str) -> np.ndarray:
+    def embed_query(self, text: str, instruction: str = "") -> np.ndarray:
+        """Embeds a single query. Some embedding models expect a different instruction/
+        prefix for queries than for the documents they're matched against (asymmetric
+        retrieval) - if `instruction` is given, it's prepended before embedding, and the
+        cache key naturally differs from the unprefixed document text since it's part of
+        what actually gets embedded.
+        """
+        text = f"{instruction}{text}" if instruction else text
         return self.embed([text])[0]

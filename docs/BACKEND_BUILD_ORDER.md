@@ -150,9 +150,10 @@ same text and confirm it matches.
 
 ### Step 6 — `shared/embeddings/base_embedder.py`
 
-**Why now:** You're about to write two different embedding backends (a local model, and
-later possibly a remote API). Rather than duplicate the caching/batching logic in both,
-write one shared base class first that both will inherit from.
+**Why now:** Even with a single embedding backend (the internal gateway), separating
+"how do I actually call the model" from "cache results, batch requests, normalize
+vectors" keeps the caching/batching logic clean and reusable if you ever add a second
+backend later. Write this shared base class before the concrete implementation.
 
 **Imports:**
 - `abc` — `ABC` and `abstractmethod`, Python's tools for saying "this is a template;
@@ -180,28 +181,37 @@ indirectly in the next step.
 
 ### Step 7 — `shared/embeddings/embedder.py`
 
-**Why now:** Now you have everywhere it depends on ready (cache, normalize, base class,
-settings). This is the first file that actually produces real embeddings.
+**Why now:** Now everything it depends on is ready (cache, normalize, base class,
+settings). This is the first file that actually produces real embeddings — via an
+internal API gateway (an "AIaaS" service in this project) rather than a locally-loaded
+model, since that avoids needing to download/run a model file at all.
 
 **Imports:**
-- `sentence_transformers.SentenceTransformer` — the library that loads a small,
-  pretrained text-embedding model and runs it locally, no external API needed.
+- An HTTP client library configured to call your organization's internal LLM/embedding
+  gateway (this project uses an OpenAI-compatible client pointed at an internal base
+  URL, authenticated via an internal auth package) — whatever your equivalent internal
+  API access pattern is.
 - Your `BaseEmbedder` from Step 6.
-- Your `get_retrieval_config` (or wherever you decide to store the model name) from
-  Step 2.
+- Your settings/config loader from Step 2 (for the gateway URL, auth details, and which
+  embedding model/deployment name to request).
 
 **What it defines:**
 - An `Embedder` class (extends `BaseEmbedder`):
-  - Constructor: loads the model by name (e.g. a small, CPU-friendly model), and records
-    its output vector size (`dimension`) — you'll need this exact number later when
-    creating the vector database table.
-  - `_encode_raw(texts)` — the one method the base class asked for: hand a batch of
-    texts to the loaded model and get raw vectors back.
-- A module-level `get_embedder()` function, cached so the (somewhat slow-to-load) model
-  is only loaded into memory once per process, not once per request.
+  - Constructor: reads the configured embedding model name, builds/reuses an
+    authenticated API client for the gateway, then makes one throwaway real embedding
+    call to discover the vector size (`dimension`) — since a remote model's output size
+    isn't something you can just read off a loaded object like you could with a local
+    model, you have to ask it directly, once.
+  - `_encode_raw(texts)` — the one method the base class asked for: sends a batch of
+    texts to the gateway's embeddings endpoint and returns the vectors from the response.
+- A module-level `get_embedder()` function, cached so the client is only authenticated
+  once per process, not once per request.
 
 **Sanity check:** `get_embedder().embed(["hello world"])` should return one 1-row array
-with as many columns as the model's known dimension.
+with as many columns as the gateway reported as the model's dimension. Since this now
+makes a real network call, you'll only be able to run this once you have valid gateway
+credentials configured — mock the API client in a unit test if you want to check the
+caching/batching logic without hitting the real network every time.
 
 ---
 
@@ -629,21 +639,35 @@ carries a non-empty parent-section text alongside its original chunk text.
 
 **Why now:** Independent of everything else in Phase 2 except that it needs candidates
 to rerank — write it any time after Step 24, before Step 27 (which needs its output).
+This project reranks via one batched LLM prompt (through the same internal gateway
+client used for generation) rather than a separately-hosted scoring model — so this
+step needs your LLM-calling helper (from whichever earlier step wraps that) rather
+than a new model-loading library.
 
-**Imports:** a cross-encoder model class from `sentence_transformers` (e.g.
-`CrossEncoder`); `get_retrieval_config`/wherever you store the model name (Phase 0).
+**Imports:** `json` and `re` (for parsing the model's response); your LLM-calling
+helper/client wrapper; `get_retrieval_config` for the final top-k value.
 
 **What it defines:**
-- A `Reranker` class: on construction, loads a small cross-encoder model (a model that
-  reads a query and a candidate *together*, rather than comparing separately computed
-  vectors — slower, but much more precise for a small final shortlist).
-  `rerank(query, chunks, top_k)` — scores every candidate chunk against the query, sorts
-  by score, and returns only the best `top_k`.
-- A cached `get_reranker()` accessor, same reasoning as the cached embedder — this model
-  is somewhat slow to load, so load it once per process.
+- A system prompt instructing the model: given a question and a numbered list of
+  candidate passages, respond with *only* a JSON array of `{index, score}` objects,
+  one per passage, scored on a fixed numeric range (e.g. -10 to +10).
+- A `Reranker` class: `rerank(query, chunks, top_k)` — builds one prompt containing
+  every candidate (each truncated to a preview length, so the prompt doesn't blow up
+  with 20-30 full chunks), sends it in a single LLM call, parses the response, attaches
+  each chunk's score, sorts, and returns the best `top_k`.
+- A response parser that's deliberately defensive: models (especially reasoning
+  models) often wrap output in `<think>...</think>` blocks or markdown code fences
+  despite instructions not to — strip those before searching for the JSON array. If
+  parsing still fails entirely, default every chunk to a *neutral* score (e.g. 0), not
+  the lowest possible one — a parsing hiccup should degrade ranking quality, not make
+  every single query look like there's no relevant evidence at all.
+- A cached `get_reranker()` accessor, same reasoning as the cached embedder/LLM client —
+  authenticate once per process, not once per request.
 
 **Sanity check:** hand it a query plus a handful of chunks (some obviously relevant, some
-not) and confirm the obviously-relevant ones score higher and end up on top.
+not) and confirm the obviously-relevant ones score higher and end up on top. Also test
+the parser directly against a deliberately malformed response (plain prose, no JSON) and
+confirm it returns neutral scores instead of crashing.
 
 ---
 
@@ -655,9 +679,9 @@ confidence signal.
 **Imports:** `math` (for a sigmoid function); nothing else new.
 
 **What it defines:**
-- `sigmoid(x)` — squashes an unbounded number into the 0-1 range, since raw cross-encoder
-  scores aren't naturally bounded and you want something interpretable as "how confident
-  is this."
+- `sigmoid(x)` — squashes an unbounded number into the 0-1 range, since the reranker's
+  raw scores aren't naturally bounded and you want something interpretable as "how
+  confident is this."
 - `normalize_rerank_scores(chunks)` — applies `sigmoid` to every chunk's raw rerank
   score and attaches the normalized version.
 - `aggregate_retrieval_confidence(chunks)` — averages the normalized scores across the

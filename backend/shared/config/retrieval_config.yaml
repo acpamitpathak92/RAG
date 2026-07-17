@@ -3,6 +3,14 @@ top_k_bm25: 20
 top_k_fused: 30
 top_k_final: 5
 
+# Some embedding models expect a different instruction/prefix on the QUERY side than on
+# the document side (asymmetric retrieval) - e.g. Qwen3-Embedding's model card recommends
+# a "Instruct: ...\nQuery: " style prefix for queries, with documents embedded plain. If
+# search results seem to miss obviously-relevant documents, check whether your configured
+# aiaas.embedding_model needs this and set it here. Left empty = no prefix (current
+# behavior unchanged). Only applied to queries, never to document chunks at ingestion time.
+query_embedding_instruction: ""
+
 rrf_k: 60 # standard RRF smoothing constant
 
 chunk:

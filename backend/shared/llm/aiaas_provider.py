@@ -5,9 +5,9 @@ from backend.shared.llm.base import LLMProvider
 class AiaasProvider(LLMProvider):
     """UBS internal AIaaS gateway - an OpenAI-compatible endpoint behind an Azure AD broker.
 
-    The only supported LLM provider (see llm/factory.py). Requires aiaas.broker_url and
-    aiaas.gateway_base_url set in llm_config.yaml, and the internal `aiaas-auth` package
-    installed from the UBS Nexus index (see README setup notes).
+    The only supported LLM provider (see llm/factory.py). Requires AIAAS_BROKER_URL and
+    AIAAS_GATEWAY_BASE_URL set in .env, and the internal `aiaas-auth` package installed
+    from the UBS Nexus index (see README setup notes).
     """
 
     def __init__(self, model: str | None = None, temperature: float = 0.0):

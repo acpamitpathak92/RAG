@@ -12,14 +12,30 @@ PROJECT_ROOT = CONFIG_DIR.parent.parent.parent
 
 
 class Settings(BaseSettings):
-    """Secrets and machine-local paths only (from .env). Anything about which provider/model
-    to use - including AIaaS's broker/gateway URLs - lives in llm_config.yaml instead, so
-    there's a single file to check/change for provider behavior."""
+    """Secrets and environment-specific values only (from .env, never committed). Anything
+    non-sensitive and environment-independent - like per-role temperatures - stays in
+    llm_config.yaml. AIaaS's tenant/broker/gateway URLs, scopes, and model names are all
+    environment-specific (differ between devpod/prod/tenants) and live here instead, so
+    they're never committed to git."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     rag_db_path: str = DEFAULT_DB_PATH
     verbose_logging: bool = False
+
+    # AIaaS connection settings - see .env.example for descriptions of each.
+    aiaas_auth_mode: str = "devpod"
+    aiaas_tenant_id: str = ""
+    aiaas_broker_url: str = ""
+    aiaas_managed_identity_client_id: str = ""
+    aiaas_scopes: str = ""  # comma-separated; split via aiaas_scopes_list
+    aiaas_gateway_base_url: str = ""
+    aiaas_chat_model: str = ""
+    aiaas_embedding_model: str = ""
+
+    @property
+    def aiaas_scopes_list(self) -> list[str]:
+        return [s.strip() for s in self.aiaas_scopes.split(",") if s.strip()]
 
 
 @lru_cache

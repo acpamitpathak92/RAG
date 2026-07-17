@@ -6,7 +6,7 @@ def sigmoid(x: float) -> float:
 
 
 def normalize_rerank_scores(chunks: list[dict]) -> list[dict]:
-    """Cross-encoder scores are unbounded logits; squash to (0,1) via sigmoid so they can be
+    """LLM-assigned relevance scores are unbounded; squash to (0,1) via sigmoid so they can be
     blended with other (already 0-1) signals downstream in grounding/confidence_composer.py.
     """
     return [{**c, "normalized_rerank_score": sigmoid(c["rerank_score"])} for c in chunks]

@@ -29,10 +29,10 @@ system actually runs:
   finally back to the user.
 - **Branch after the confidence gate**: a diamond decision box splits into the
   orange "insufficient evidence" fallback path (no LLM call) versus the purple
-  "grounded generation" path, which calls out to the pluggable LLM provider
-  (dashed box, since it's swappable — Groq by default, an internal AIaaS gateway
-  provider also supported but off unless explicitly configured) before continuing
-  through citation mapping and confidence scoring.
+  "grounded generation" path, which calls out to the internal AIaaS gateway
+  (dashed box) before continuing through citation mapping and confidence scoring.
+  Reranking earlier in the pipeline also goes through AIaaS (a batched relevance-scoring
+  prompt), not a separately-hosted model.
 
 ## Legend
 
@@ -55,9 +55,9 @@ Knowledge Source (.md/.pdf) -> Document Parsing -> Text Cleaning -> Metadata Ext
 
 QUERY (every question):
 User Question -> Query Embedding -> Hybrid Retrieval (reads both stores, RRF-fused)
-  -> Parent Document Retrieval -> Cross-Encoder Reranking -> "Enough good evidence?"
+  -> Parent Document Retrieval -> LLM-Based Reranking (AIaaS) -> "Enough good evidence?"
        -- no  --> Insufficient Evidence Node (honest fallback message) --------\
-       -- yes --> Grounded Generation Agent <--> Pluggable LLM Provider        |
+       -- yes --> Grounded Generation Agent <--> Internal AIaaS Gateway         |
                      -> Citation Mapping -> Confidence Scoring -----------------+--> Respond Node -> shown to user
 ```
 

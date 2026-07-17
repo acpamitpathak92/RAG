@@ -52,19 +52,25 @@ cp .env.example .env
 **AIaaS is the only supported LLM/embedding/reranking provider** — every LLM call
 (query cleanup, grading, generation, reranking, etc.) and every embedding call goes
 through the internal UBS gateway. There's no Groq fallback and no local
-Hugging Face model to download. All of it is configured in one file,
-`backend/shared/config/llm_config.yaml`, nothing in `.env`:
+Hugging Face model to download.
 
-```yaml
-aiaas:
-  auth_mode: devpod
-  tenant_id: "..."
-  broker_url: "..."
-  scopes: ["api://..."]
-  gateway_base_url: "..."
-  chat_model: "Qwen/Qwen3.0-27B"
-  embedding_model: "Qwen/Qwen3-Embedding-8B"
+Connection details (tenant, broker/gateway URLs, OAuth scopes, model names) are
+environment-specific and sensitive, so they're **all set in `.env`, never committed**
+— fill these in after `cp .env.example .env`:
+
 ```
+AIAAS_AUTH_MODE=devpod
+AIAAS_TENANT_ID=...
+AIAAS_BROKER_URL=...
+AIAAS_SCOPES=api://...
+AIAAS_GATEWAY_BASE_URL=...
+AIAAS_CHAT_MODEL=Qwen/Qwen3.0-27B
+AIAAS_EMBEDDING_MODEL=Qwen/Qwen3-Embedding-8B
+```
+
+The only AIaaS-related setting that stays in `backend/shared/config/llm_config.yaml`
+(committed, not sensitive) is the per-role temperature block, since it doesn't vary by
+environment.
 
 Since there's nothing to run locally, ingestion and every question **require live
 AIaaS connectivity** — there is no offline/local mode.

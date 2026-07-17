@@ -1,31 +1,15 @@
-# Single source of truth for every LLM + embedding setting. AIaaS (the internal UBS
+# Non-sensitive, environment-independent LLM settings only. AIaaS (the internal UBS
 # gateway) is the only supported backend - every LLM call (chat, cleanup, grading,
-# reranking, etc.) and every embedding call goes through it. Change anything here - no
-# code changes needed.
+# reranking, etc.) and every embedding call goes through it.
+#
+# AIaaS connection details (tenant, broker/gateway URLs, OAuth scopes, model names) are
+# environment-specific and sensitive, so they live in .env instead of here - see
+# .env.example for the full list of AIAAS_* variables. This file only holds the one
+# setting that's genuinely the same across environments: per-role temperature.
 
-aiaas:
-  # "devpod": broker-based auth for local/remote dev environments with no browser (uses
-  #   broker_url; this is the PROD environment's confirmed config below).
-  # "managed_identity": for Azure-hosted compute with an assigned managed identity (uses
-  #   managed_identity_client_id, or the AZURE_CLIENT_ID env var if that's left blank).
-  auth_mode: devpod
-
-  tenant_id: ""
-  broker_url: ""
-  managed_identity_client_id: ""    # optional when auth_mode: managed_identity - falls back to $AZURE_CLIENT_ID
-
-  # OAuth scope requested on every auth call (both devpod and managed_identity). Some gateway
-  # routes (embeddings has been observed to need this) 404 without the right scope on the
-  # token, even though the same token works fine for chat completions.
-  scopes:
-    - ""
-
-  gateway_base_url: ""
-  chat_model: ""
-  embedding_model: ""
-
-# Per-role temperature (model is always aiaas.chat_model above - every role shares one
-# chat model, just with its own temperature depending on how deterministic it needs to be).
+# Per-role temperature (model is always AIAAS_CHAT_MODEL from .env - every role shares
+# one chat model, just with its own temperature depending on how deterministic it needs
+# to be).
 roles:
   query_cleanup:
     temperature: 0.0

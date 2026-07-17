@@ -19,7 +19,7 @@ class Embedder(BaseEmbedder):
         model_name = config.get("embedding_model", "")
         if not model_name:
             raise ValueError(
-                "aiaas.embedding_model must be set in llm_config.yaml to use embeddings."
+                "AIAAS_EMBEDDING_MODEL must be set in .env to use embeddings."
             )
         super().__init__(model_name, use_cache)
         self._client = get_aiaas_client()

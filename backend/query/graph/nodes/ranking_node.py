@@ -8,8 +8,8 @@ logger = get_logger(__name__)
 
 
 def ranking_node(state: RAGState) -> dict:
-    """Deterministic node: RRF-fused candidates -> cross-encoder rerank -> final top-k
-    with normalized scores and an aggregate pre-generation retrieval confidence.
+    """Deterministic node: RRF-fused candidates -> LLM-based rerank (via AIaaS) -> final
+    top-k with normalized scores and an aggregate pre-generation retrieval confidence.
     """
     chunks = state.get("retrieved_chunks", [])
     if not chunks:

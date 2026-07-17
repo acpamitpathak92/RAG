@@ -101,12 +101,13 @@ an answer gets written.
 
 Steps 4-5 are fast, but speed comes at the cost of precision — a merely-okay match can
 occasionally rank ahead of a genuinely better one. So the system takes the merged
-shortlist (often 20-30 candidates) and runs a second, much more careful pass: a more
-powerful model reads your actual question *side-by-side* with each candidate chunk
-(not just comparing number-lists anymore) and re-scores how well each one truly
-answers what you asked. Only the very best few survive this pass.
+shortlist (often 20-30 candidates) and runs a second, much more careful pass: the AIaaS
+chat model reads your actual question *side-by-side* with each candidate chunk in one
+batched prompt (not just comparing number-lists anymore) and re-scores how well each one
+truly answers what you asked. Only the very best few survive this pass.
 
-> **Technically, this is called:** *Cross-Encoder Reranking*.
+> **Technically, this is called:** *LLM-Based Reranking* (an AIaaS chat-completion call,
+> not a separately-hosted model).
 
 At the end of this step, the system also computes a rough number summarizing "how
 strong does this evidence look overall?" — this becomes an important ingredient in the

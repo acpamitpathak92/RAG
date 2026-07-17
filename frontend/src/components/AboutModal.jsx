@@ -3,17 +3,17 @@ const INGESTION_STEPS = [
   'Parsing',
   'Cleaning',
   'Chunking\n(parent-child)',
-  'Embedding',
+  'Embedding\n(AIaaS)',
   'SQLite + sqlite-vec\n(storage)',
 ]
 
 const QUERY_STEPS = [
   'Your question',
   'Query cleanup\n(typos, grammar)',
-  'Query embedding',
+  'Query embedding\n(AIaaS)',
   'Hybrid retrieval\n(vector + keyword)',
-  'Reranking',
-  'Grounded generation\n(LLM, evidence-only)',
+  'Reranking\n(AIaaS)',
+  'Grounded generation\n(AIaaS, evidence-only)',
   'Citations +\nconfidence',
   'Answer',
 ]
@@ -44,6 +44,8 @@ export default function AboutModal({ onClose }) {
         <p className="about-lead">
           A local Retrieval-Augmented Generation system. Documents are ingested once; every
           question runs the query pipeline fresh, over whatever is currently in the knowledge base.
+          Every embedding, reranking, and generation call is served by the internal UBS
+          <strong> AIaaS</strong> gateway — the only LLM/embedding provider this system uses.
         </p>
 
         <div className="flow-section">
